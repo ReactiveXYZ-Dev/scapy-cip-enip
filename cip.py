@@ -32,7 +32,10 @@ import sys
 
 from scapy import all as scapy_all
 
+import enip
 import enip_tcp
+import enip_udp
+import enip_cpf
 import utils
 
 
@@ -136,6 +139,162 @@ class CIP_ReqReadOtherTag(scapy_all.Packet):
         scapy_all.LEShortField("length", None),
     ]
 
+class CIP_PortSegment(scapy_all.Packet):
+    name="CIP_PortSegment"
+
+    PORT_IDENT={
+        0: "Reserved",
+        1: "Back-Plane",
+        15: "Extended",
+    }
+
+    fields_desc = [
+        scapy_all.BitField("extended_link_address_size", 0, 1),
+        scapy_all.BitEnumField("port_identifier", 0, 4, PORT_IDENT),
+        scapy_all.ByteField("link_address_size", 0),
+        scapy_all.ConditionalField(
+            scapy_all.LEIntField("extended_port_identifier", 0),
+            lambda p: p.port_identifier == 0xf  # If the Port Identifier is 15, then a 16-bit field, called the Extended Port Identifier, shall be the next part of the Port Segment
+        ),
+        scapy_all.ConditionalField(
+                scapy_all.FieldListField("Link_Address", [],
+                                         scapy_all.XByteField("",0), length_from=lambda p: p.link_address_size
+                                         ),
+            lambda p: p.extended_link_address_size == 0x1 # If the Port Identifier is 15, then a 16-bit field, called the Extended Port Identifier, shall be the next part of the Port Segment
+        )
+    ]
+
+    def extract_padding(self, p):
+        print self.__class__.__name__ + ": P=" + str(p)
+        return "", p
+
+
+class CIP_LogicalSegment(scapy_all.Packet):
+    name="CIP_LogicalSegment"
+
+    LOGICAL_TYPE = {
+        0: "Class ID",
+        1: "Instance ID",
+        2: "Member ID",
+        3: "Connection Point",
+        4: "Attribute ID",
+        5: "Special",
+        6: "Service ID",
+        7: "Reserved"
+    # The Special and Service ID Logical Types do not use the logical addressing definition for the Logical Format.
+    }
+
+    LOGICAL_FORMAT = {
+        0: "8 - bit logical address",
+        1: "16-bit logical address",
+        2: "32-bit logical address",
+        3: "Reserved for future use"
+    }
+
+    fields_desc = [
+        scapy_all.BitEnumField("logical_type", 0, 3, LOGICAL_TYPE),
+        scapy_all.BitEnumField("logical_format", 0, 2, LOGICAL_FORMAT),
+        # When the logical segment is included within a Padded Path, the 16 - bit and 32 - bit
+        # logical formats shall have a pad inserted between the segment type byte and the Logical Value
+        # (the 8 - bit format is identical to the Packed Path).The    pad    byte    shall    be    set    to    zero.
+        scapy_all.ConditionalField(scapy_all.ByteField("padding", 0), lambda p: p.logical_format > 0x0),
+        # scapy_all.ByteField("value", 0),
+        scapy_all.ConditionalField(
+            scapy_all.ByteField("value8bit", 0),
+            lambda p:
+                p.logical_format >= 0x0
+        ),
+        scapy_all.ConditionalField(
+            scapy_all.LEShortField("value16bit", 0),
+            lambda p:
+                p.logical_format >= 0x1
+        ),
+        scapy_all.ConditionalField(
+            scapy_all.LELongField("value32bit", 0),
+            lambda p:
+                p.logical_format >= 0x2
+        ),
+    ]
+
+    def extract_padding(self, p):
+        # print self.__class__.__name__ + ": P=" + str(p)
+        return "", p
+
+    #
+
+#
+#
+# class A_8bitValue(scapy_all.Packet):
+#     fields_desc = [
+#         scapy_all.ByteField("value", 0),
+#     ]
+#
+#     def extract_padding(self, p):
+#         # print self.__class__.__name__ + ": P=" + str(p)
+#         return (), p
+#
+#
+# class A_16bitValue(scapy_all.Packet):
+#     fields_desc = [
+#         scapy_all.LEShortField("value", 0),
+#     ]
+#
+#     def extract_padding(self, p):
+#         # print self.__class__.__name__ + ": P=" + str(p)
+#         return (), p
+#
+# class A_32bitValue(scapy_all.Packet):
+#     fields_desc = [
+#         scapy_all.LELongField("value", 0),
+#     ]
+#
+#     def extract_padding(self, p):
+#         # print self.__class__.__name__ + ": P=" + str(p)
+#         return (), p
+#
+# scapy_all.bind_layers(CIP_LogicalSegment, A_8bitValue, logical_format=0)
+# scapy_all.bind_layers(CIP_LogicalSegment, A_16bitValue, logical_format=1)
+# scapy_all.bind_layers(CIP_LogicalSegment, A_32bitValue, logical_format=2)
+
+SEGMENT_TYPE={
+    0:"Port Segment",   # 0 0 0 Port Segment
+    1:"Logical Segment",   # 0 0 1 Logical Segment
+    2:"Network Segment",   # 0 1 0 Network Segment
+    3:"Symbolic Segment",   # 0 1 1 Symbolic Segment
+    4:"Data Segment",   # 1 0 0 Data Segment
+    5:"Data Type (constructed)",   # 1 0 1 Data Type (constructed, see section C-2.1)
+    6:"Data Type (elementary)",   # 1 1 0 Data Type (elementary, see section C-2.1)
+    7:"Reserved"   # 1 1 1 Reserved for future use
+}
+
+
+class CIP_PathPadded(scapy_all.Packet):
+    name="CIP_PathPadded"
+    fields_desc = [
+        scapy_all.BitEnumField("segment_type", 0, 3, SEGMENT_TYPE),
+        # scapy_all.PacketField("segment", CIP_PortSegment(),CIP_PortSegment),
+        # scapy_all.BitEnumField("don't care", 0, 5, SEGMENT_TYPE),
+        # scapy_all.LEShortField("zero", 0),
+        # scapy_all.LEShortField("length", None),
+    ]
+
+    def extract_padding(self, p):
+        print self.__class__.__name__+": P="+str(p)
+        # print self.__class__.__name__+": Length="+str(self.length)
+        q,w=p
+        # return "",(q,8-w,)
+        # return (w,q[:2]), (q,  w,)
+        # return p[:self.length], p[self.length:]
+        return (q,w,),(q,8-w,)
+
+scapy_all.bind_layers(CIP_PathPadded, CIP_PortSegment, segment_type=0)   #Port Segment
+scapy_all.bind_layers(CIP_PathPadded, CIP_LogicalSegment, segment_type=1)   #Port Segment
+scapy_all.bind_layers(CIP_PathPadded, CIP_PortSegment, segment_type=2)   #Port Segment
+scapy_all.bind_layers(CIP_PathPadded, CIP_PortSegment, segment_type=3)   #Port Segment
+scapy_all.bind_layers(CIP_PathPadded, CIP_PortSegment, segment_type=4)   #Port Segment
+scapy_all.bind_layers(CIP_PathPadded, CIP_PortSegment, segment_type=5)   #Port Segment
+scapy_all.bind_layers(CIP_PathPadded, CIP_PortSegment, segment_type=6)   #Port Segment
+scapy_all.bind_layers(CIP_PathPadded, CIP_PortSegment, segment_type=7)   #Port Segment
 
 class CIP_PathField(scapy_all.StrLenField):
     SEGMENT_TYPES = {
@@ -445,7 +604,8 @@ class CIP_ConnectionParam(scapy_all.Packet):
         return struct.pack('>H', int(b)) + s[2:]
 
     def do_build(self):
-        p = ''
+        # p = ''
+        p = super(CIP_ConnectionParam, self).do_build()
         return p
 
     def extract_padding(self, s):
@@ -455,24 +615,38 @@ class CIP_ConnectionParam(scapy_all.Packet):
 class CIP_ReqForwardOpen(scapy_all.Packet):
     """Forward Open request"""
     name = "CIP_ReqForwardOpen"
+    
+    SEGMENT_TYPE = {
+        0x00: "Port Segment",
+        0x01: "Logical Segmentc",
+        0x02: "Network Segment",
+        0x03: "Symbolic Segment",
+        0x04: "Data Segment",
+        0x05: "Data Type (constructed)",
+        0x06: "Data Type (elementary)",
+        0x07: "Reserved for future use",
+    }
+
     fields_desc = [
         scapy_all.BitField("priority", 0, 4),
         scapy_all.BitField("tick_time", 0, 4),
         scapy_all.ByteField("timeout_ticks", 249),
-        scapy_all.LEIntField("OT_network_connection_id", 0x80000031),
-        scapy_all.LEIntField("TO_network_connection_id", 0x80fe0030),
+        utils.XLEIntField("OT_network_connection_id", 0x80000031),
+        utils.XLEIntField("TO_network_connection_id", 0x80fe0030),
         scapy_all.LEShortField("connection_serial_number", 0x1337),
-        scapy_all.LEShortField("vendor_id", 0x004d),
-        scapy_all.LEIntField("originator_serial_number", 0xdeadbeef),
+        utils.XLEShortField("vendor_id", 0x004d),
+        utils.XLEIntField("originator_serial_number", 0xdeadbeef),
         scapy_all.ByteField("connection_timeout_multiplier", 0),
         scapy_all.X3BytesField("reserved", 0),
-        scapy_all.LEIntField("OT_rpi", 0x007a1200),  # 8000 ms
+        utils.XLEIntField("OT_rpi", 0x007a1200),  # 8000 ms
         scapy_all.PacketField('OT_connection_param', CIP_ConnectionParam(), CIP_ConnectionParam),
-        scapy_all.LEIntField("TO_rpi", 0x007a1200),
+        utils.XLEIntField("TO_rpi", 0x007a1200),
         scapy_all.PacketField('TO_connection_param', CIP_ConnectionParam(), CIP_ConnectionParam),
         scapy_all.XByteField("transport_type", 0xa3),  # direction server, application object, class 3
-        scapy_all.ByteField("path_wordsize", None),
-        CIP_PathField("path", None, length_from=lambda p: 2 * p.path_wordsize),
+        scapy_all.ByteField("Connection_Path_Size", None),  #The number of 16 bit words in the Connection_Path field.
+        # scapy_all.PacketListField("path_segment_items", [], CIP_Path1, length_from=lambda p: 2 * p.Connection_Path_Size),
+        scapy_all.PacketListField("path_segment_items", [], CIP_PathPadded, length_from=lambda p: 6),
+        # CIP_PathField("path", None, length_from=lambda p: 2 * p.path_wordsize),
     ]
 
 
@@ -555,8 +729,8 @@ class CIP_ReqConnectionManager(scapy_all.Packet):
         return p + pay
 
 
-scapy_all.bind_layers(enip_tcp.ENIP_ConnectionPacket, CIP)
-scapy_all.bind_layers(enip_tcp.ENIP_SendUnitData_Item, CIP, type_id=0x00b2)
+# scapy_all.bind_layers(enip.ENIP_ConnectionPacket, CIP)
+scapy_all.bind_layersenip_cpf.CPF_DataItem, CIP, type_id=0x00b2)
 
 scapy_all.bind_layers(CIP, CIP_RespAttributesAll, direction=1, service=0x01)
 scapy_all.bind_layers(CIP, CIP_ReqGetAttributeList, direction=0, service=0x03)
