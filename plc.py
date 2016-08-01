@@ -29,8 +29,8 @@ from scapy import all as scapy_all
 from cip import CIP, CIP_Path, CIP_ReqConnectionManager, \
     CIP_MultipleServicePacket, CIP_ReqForwardOpen, CIP_RespForwardOpen, \
     CIP_ReqForwardClose, CIP_ReqGetAttributeList, CIP_ReqReadOtherTag
-from enip_tcp import ENIP_TCP, ENIP_SendUnitData, ENIP_SendUnitData_Item, \
-    ENIP_ConnectionAddress, ENIP_ConnectionPacket, ENIP_RegisterSession, ENIP_SendRRData
+from enip import ENIP_PACKET, ENIP_SendUnitData, ENIP_ConnectionAddress, \
+    ENIP_ConnectionPacket, ENIP_RegisterSession, ENIP_SendRRData
 
 # Global switch to make it easy to test without sending anything
 NO_NETWORK = False
@@ -56,7 +56,7 @@ class PLCClient(object):
         self.sequence = 1
 
         # Open an Ethernet/IP session
-        sessionpkt = ENIP_TCP() / ENIP_RegisterSession()
+        sessionpkt = ENIP_PACKET() / ENIP_RegisterSession()
         if self.sock is not None:
             self.sock.send(str(sessionpkt))
             reply_pkt = self.recv_enippkt()
@@ -68,7 +68,7 @@ class PLCClient(object):
 
     def send_rr_cip(self, cippkt):
         """Send a CIP packet over the TCP connection as an ENIP Req/Rep Data"""
-        enippkt = ENIP_TCP(session=self.session_id)
+        enippkt = ENIP_PACKET(session=self.session_id)
         enippkt /= ENIP_SendRRData(items=[
             ENIP_SendUnitData_Item(type_id=0),
             ENIP_SendUnitData_Item() / cippkt
@@ -92,7 +92,7 @@ class PLCClient(object):
 
     def send_unit_cip(self, cippkt):
         """Send a CIP packet over the TCP connection as an ENIP Unit Data"""
-        enippkt = ENIP_TCP(session=self.session_id)
+        enippkt = ENIP_PACKET(session=self.session_id)
         enippkt /= ENIP_SendUnitData(items=[
             ENIP_SendUnitData_Item() / ENIP_ConnectionAddress(connection_id=self.enip_connid),
             ENIP_SendUnitData_Item() / ENIP_ConnectionPacket(sequence=self.sequence) / cippkt
@@ -106,7 +106,7 @@ class PLCClient(object):
         if self.sock is None:
             return
         pktbytes = self.sock.recv(2000)
-        pkt = ENIP_TCP(pktbytes)
+        pkt = ENIP_PACKET(pktbytes)
         return pkt
 
     def forward_open(self):
