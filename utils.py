@@ -22,6 +22,15 @@
 """Useful routines and utilities which simplify code writing"""
 from scapy import all as scapy_all
 
+def merge_dicts(*dict_args):#from  http://stackoverflow.com/a/26853961
+    '''
+    Given any number of dicts, shallow copy and merge into a new dict,
+    precedence goes to key value pairs in latter dicts.
+    '''
+    result = {}
+    for dictionary in dict_args:
+        result.update(dictionary)
+    return result
 
 def hexdump(data, columns=16, indentlvl=""):
     """Return the hexadecimal representation of the data"""
@@ -55,3 +64,15 @@ class XBitEnumField(scapy_all.BitEnumField):
         if x in self.i2s:
             return self.i2s[x]
         return scapy_all.lhex(x)
+
+class XLEIntField(scapy_all.LEIntField):
+    """A Little Endian IntField with hexadecimal representation"""
+    def i2repr(self, pkt, x):
+        from scapy.utils import lhex
+        return lhex(self.i2h(pkt, x))
+
+class XLEShortField(scapy_all.LEShortField):
+    """A Little Endian ShortField with hexadecimal representation"""
+    def i2repr(self, pkt, x):
+        from scapy.utils import lhex
+        return lhex(self.i2h(pkt, x))
