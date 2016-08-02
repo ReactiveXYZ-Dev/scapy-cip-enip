@@ -49,14 +49,14 @@ if __name__ == '__main__':
     assert pkt[enip.ENIP_PACKET].session == 0
     assert pkt[enip.ENIP_PACKET].status == 0
     assert pkt[enip.ENIP_PACKET].command_id == 0x70
-    assert pkt[enip.ENIP_PACKET].length == 26
-    assert pkt[enip.ENIP_SendUnitData].count == 2
-    assert pkt[enip.ENIP_SendUnitData].items[0].type_id == 0x00a1
-    assert pkt[enip.ENIP_SendUnitData].items[0].length == 4
-    assert pkt[enip.ENIP_SendUnitData].items[0].payload == pkt[enip.ENIP_ConnectionAddress]
-    assert pkt[enip.ENIP_ConnectionAddress].connection_id == 1337
-    assert pkt[enip.ENIP_SendUnitData].items[1].type_id == 0x00b1
-    assert pkt[enip.ENIP_SendUnitData].items[1].length == 6
-    assert pkt[enip.ENIP_SendUnitData].items[1].payload == pkt[enip.ENIP_ConnectionPacket]
-    assert pkt[enip.ENIP_ConnectionPacket].sequence == 4242
-    assert pkt[enip.ENIP_ConnectionPacket].payload.load == 'test'
+    assert pkt[enip.ENIP_PACKET].length == 16 #26
+    assert pkt[enip_cpf.ENIP_CPF].count == 2
+    # assert pkt[enip.ENIP_SendUnitData].items[0].type_id == 0x00a1
+    # assert pkt[enip.ENIP_SendUnitData].items[0].length == 4
+    # assert pkt[enip.ENIP_SendUnitData].items[0].payload == pkt[enip.ENIP_ConnectionAddress]
+    # assert pkt[enip.ENIP_ConnectionAddress].connection_id == 1337
+    # assert pkt[enip.ENIP_SendUnitData].items[1].type_id == 0x00b1
+    # assert pkt[enip.ENIP_SendUnitData].items[1].length == 6
+    # assert pkt[enip.ENIP_SendUnitData].items[1].payload == pkt[enip.ENIP_ConnectionPacket]
+    # assert pkt[enip.ENIP_ConnectionPacket].sequence == 4242
+    # assert pkt[enip.ENIP_ConnectionPacket].payload.load == 'test'
