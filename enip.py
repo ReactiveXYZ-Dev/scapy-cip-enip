@@ -43,7 +43,6 @@ DEVICE_PROFILES = {
     0x1F : "DC Power Generator",
     0xC8 : "Embedded Component",
     0x22 : "Encoder",
-    0x27 : "Enhanced Mass Flow Controller",
     0x24 : "Fluid Flow Controller",
     0x07 : "General Purpose Discrete I/O",
     0x2B : "Generic Device, keyable",
@@ -117,7 +116,7 @@ class ENIP_SendUnitData(scapy_all.Packet):
     fields_desc = [
         scapy_all.LEIntField("interface_handle", 0),
         scapy_all.LEShortField("timeout", 0),
-        scapy_all.PacketField("Encapsulated CPF packet", enip_cpf.ENIP_CPF(), enip_cpf.ENIP_CPF ),
+        scapy_all.PacketField("Encapsulated_CPF_packet", enip_cpf.ENIP_CPF(), enip_cpf.ENIP_CPF ),
         # utils.LEShortLenField("count", None, count_of="items"),
         # scapy_all.PacketListField("items", [], ENIP_SendUnitData_Item,
         #                           count_from=lambda p: p.count),
@@ -217,12 +216,12 @@ class ENIP_ListIdentity(scapy_all.Packet):
         scapy_all.PacketListField("IdentityItems", [], ENIP_ListIdentity_TargetItem, count_from=lambda p: p.count),
     ]
 
-
     def extract_padding(self, p):
         # print self.__class__.__name__ + ": P=" + str(p)
         return "", p
 
 
+# Replaces ENIP_TCP; same structure, different name
 class ENIP_PACKET(scapy_all.Packet):
     """Ethernet/IP packet over TCP"""
     name = "ENIP_PACKET"
@@ -243,6 +242,20 @@ class ENIP_PACKET(scapy_all.Packet):
             l = len(pay)
             p = p[:2] + struct.pack("<H", l) + p[4:]
         return p + pay
+
+# From enip_udp.py; same name and structure, just relocated
+class ENIP_UDP(scapy_all.Packet):
+    """Ethernet/IP packet over UDP"""
+    name = "ENIP_UDP"
+    fields_desc = [
+        utils.LEShortLenField("count", None, count_of="items"),
+        scapy_all.PacketListField("items", [], enip_cpf.CPF_Item,
+                                  count_from=lambda p: p.count),
+    ]
+
+    def extract_padding(self, p):
+        return "", p
+
 
 scapy_all.bind_layers(ENIP_PACKET, ENIP_ListServices, command_id=0x0004)
 scapy_all.bind_layers(ENIP_PACKET, ENIP_RegisterSession, command_id=0x0065)
