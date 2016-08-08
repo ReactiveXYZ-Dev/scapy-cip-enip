@@ -22,6 +22,8 @@
 """Useful routines and utilities which simplify code writing"""
 from scapy import all as scapy_all
 
+# New function for merging dictionaries together that is
+# particularly helpful when building large dictionary for ITEM_ID values - MED
 def merge_dicts(*dict_args):#from  http://stackoverflow.com/a/26853961
     '''
     Given any number of dicts, shallow copy and merge into a new dict,
@@ -65,6 +67,7 @@ class XBitEnumField(scapy_all.BitEnumField):
             return self.i2s[x]
         return scapy_all.lhex(x)
 
+# Classes for new fields: Hex representation of little endian ints & shorts - MED
 class XLEIntField(scapy_all.LEIntField):
     """A Little Endian IntField with hexadecimal representation"""
     def i2repr(self, pkt, x):
