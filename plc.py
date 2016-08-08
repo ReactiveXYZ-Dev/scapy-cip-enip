@@ -29,8 +29,10 @@ from scapy import all as scapy_all
 from cip import CIP, CIP_Path, CIP_ReqConnectionManager, \
     CIP_MultipleServicePacket, CIP_ReqForwardOpen, CIP_RespForwardOpen, \
     CIP_ReqForwardClose, CIP_ReqGetAttributeList, CIP_ReqReadOtherTag
+# Updated imports to reflect code changes in other files - MED
 from enip import ENIP_PACKET, ENIP_SendUnitData, ENIP_ConnectionAddress, \
     ENIP_ConnectionPacket, ENIP_RegisterSession, ENIP_SendRRData
+import enip_cpf
 
 # Global switch to make it easy to test without sending anything
 NO_NETWORK = False
@@ -56,6 +58,7 @@ class PLCClient(object):
         self.sequence = 1
 
         # Open an Ethernet/IP session
+        # Updated to reflect location and name of classes - MED
         sessionpkt = ENIP_PACKET() / ENIP_RegisterSession()
         if self.sock is not None:
             self.sock.send(str(sessionpkt))
@@ -68,10 +71,12 @@ class PLCClient(object):
 
     def send_rr_cip(self, cippkt):
         """Send a CIP packet over the TCP connection as an ENIP Req/Rep Data"""
+        # Updated to reflect location and name of classes - MED
         enippkt = ENIP_PACKET(session=self.session_id)
         enippkt /= ENIP_SendRRData(items=[
-            ENIP_SendUnitData_Item(type_id=0),
-            ENIP_SendUnitData_Item() / cippkt
+            #Updated to reflect code changes - MED
+            enip_cpf.CPF_AddressDataItem(type_id=0),
+            enip_cpf.CPF_DataItem() / cippkt
         ])
         if self.sock is not None:
             self.sock.send(str(enippkt))
@@ -92,10 +97,12 @@ class PLCClient(object):
 
     def send_unit_cip(self, cippkt):
         """Send a CIP packet over the TCP connection as an ENIP Unit Data"""
+        # Updated to reflect location and name of classes - MED
         enippkt = ENIP_PACKET(session=self.session_id)
         enippkt /= ENIP_SendUnitData(items=[
-            ENIP_SendUnitData_Item() / ENIP_ConnectionAddress(connection_id=self.enip_connid),
-            ENIP_SendUnitData_Item() / ENIP_ConnectionPacket(sequence=self.sequence) / cippkt
+            # Updated to reflect code changes - MED
+            enip_cpf.CPF_AddressDataItem() / ENIP_ConnectionAddress(connection_id=self.enip_connid),
+            enip_cpf.CPF_DataItem() / ENIP_ConnectionPacket(sequence=self.sequence) / cippkt
         ])
         self.sequence += 1
         if self.sock is not None:
@@ -106,6 +113,7 @@ class PLCClient(object):
         if self.sock is None:
             return
         pktbytes = self.sock.recv(2000)
+        # Updated to reflect location and name of classes - MED
         pkt = ENIP_PACKET(pktbytes)
         return pkt
 
