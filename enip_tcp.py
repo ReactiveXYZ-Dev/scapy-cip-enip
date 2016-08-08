@@ -45,7 +45,7 @@ if __name__ == '__main__':
     pkt /= scapy_all.IP(src='192.168.1.1', dst='192.168.1.42')
     pkt /= scapy_all.TCP(sport=10000, dport=44818)
     # Modified to reflect changes in code names and locations - MED
-    pkt /= ENIP_PACKET()
+    pkt /= enip.ENIP_PACKET()
     pkt /= enip.ENIP_SendUnitData(Encapsulated_CPF_packet = enip_cpf.ENIP_CPF(items=[
         enip_cpf.CPF_AddressDataItem() / enip.ENIP_ConnectionAddress(connection_id=1337),
         enip_cpf.CPF_DataItem() / enip.ENIP_ConnectionPacket(sequence=4242) / scapy_all.Raw(load='test'),
