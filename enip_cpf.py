@@ -63,7 +63,7 @@ class CPF_SequencedAddressItem(scapy_all.Packet):
         scapy_all.LEIntField("sequence_number", 0),
     ]
 
-
+# Renamed so that Address Item and Data Item have different names - MED
 class CPF_Item(scapy_all.Packet):
     name = "CPF_Item"
     fields_desc = [
@@ -83,7 +83,6 @@ class CPF_Item(scapy_all.Packet):
 class CPF_AddressDataItem(CPF_Item):
     name = "CPF_AddressDataItem"
 
-
 class CPF_DataItem(CPF_Item):
     name = "CPF_DataItem"
 
@@ -91,8 +90,10 @@ class ENIP_CPF(scapy_all.Packet):
     name = "ENIP_CPF"
     fields_desc = [
         utils.LEShortLenField("count", 2, count_of="items"),
-        scapy_all.PacketField("Address Item", CPF_AddressDataItem('', type_id=0x0, length=0), CPF_AddressDataItem),
-        scapy_all.PacketField("Data Item", CPF_DataItem('', type_id=0x0, length=0), CPF_DataItem),
+        # Changed implementation to reflect use of CIP_Item above
+        scapy_all.PacketListField("items", [], CPF_Item,
+                                  count_from=lambda p: p.count),
+        # Due to potential 'optional' packet components at end in protocol
         scapy_all.ConditionalField(
             scapy_all.PacketListField("optional_items", None, CPF_Item, count_from=lambda p: p.count-2),
             lambda p: p.count>2
@@ -102,5 +103,7 @@ class ENIP_CPF(scapy_all.Packet):
     def extract_padding(self, p):
         return '', p
 
-
+# Added additional binds - MED
 scapy_all.bind_layers(CPF_AddressDataItem, CPF_SequencedAddressItem, type_id=0x8002)
+scapy_all.bind_layers(CPF_Item, CPF_SequencedAddressItem, type_id=0x8002)
+scapy_all.bind_layers(ENIP_CPF, CPF_DataItem, type_id=0x8002)
