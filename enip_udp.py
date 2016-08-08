@@ -28,6 +28,9 @@ import struct
 
 from scapy import all as scapy_all
 
+import enip
+import enip_cpf
+
 import utils
 
 # Keep-alive sequences
@@ -39,49 +42,24 @@ ENIP_UDP_KEEPALIVE = (
     b'\xff\xff\xff\xff\x00\x00\x00\x00')
 
 
-class ENIP_UDP_SequencedAddress(scapy_all.Packet):
-    name = "ENIP_UDP_SequencedAddress"
-    fields_desc = [
-        scapy_all.LEIntField("connection_id", 0),
-        scapy_all.LEIntField("sequence", 0),
-    ]
+# Moved ENIP_UDP_SequencedAddress() to enip_cpf file with new name CPF_SequencedAddressItem
+
+# Moved ENIP_UDP_ITEM into enip_cpf file as new class CPF_ITEM
 
 
-class ENIP_UDP_Item(scapy_all.Packet):
-    name = "ENIP_UDP_Item"
-    fields_desc = [
-        scapy_all.LEShortEnumField("type_id", 0, {
-            0x00b1: "Connected_Data_Item",
-            0x8002: "Sequenced_Address",
-        }),
-        scapy_all.LEShortField("length", None),
-    ]
-
-    def extract_padding(self, p):
-        return p[:self.length], p[self.length:]
-
-    def post_build(self, p, pay):
-        if self.length is None and pay:
-            l = len(pay)
-            p = p[:2] + struct.pack("<H", l) + p[4:]
-        return p + pay
-
-
-class ENIP_UDP(scapy_all.Packet):
-    """Ethernet/IP packet over UDP"""
-    name = "ENIP_UDP"
-    fields_desc = [
-        utils.LEShortLenField("count", None, count_of="items"),
-        scapy_all.PacketListField("items", [], ENIP_UDP_Item,
-                                  count_from=lambda p: p.count),
-    ]
-
-    def extract_padding(self, p):
-        return "", p
+# ENIP_UDP moved to new file enip.py --> Keeps all EtherNet/IP Level
+# processing in the same file rather than splitting based on upper layer - MED
 
 
 scapy_all.bind_layers(scapy_all.UDP, ENIP_UDP, sport=2222, dport=2222)
 scapy_all.bind_layers(ENIP_UDP_Item, ENIP_UDP_SequencedAddress, type_id=0x8002)
+scapy_all.bind_layers(scapy_all.UDP, enip.ENIP_UDP, sport=44818)
+
+scapy_all.bind_layers(enip.ENIP_UDP, enip.ENIP_RegisterSession, command_id=0x0065)
+scapy_all.bind_layers(enip.ENIP_UDP, enip.ENIP_SendRRData, command_id=0x006f)
+scapy_all.bind_layers(enip.ENIP_UDP, enip.ENIP_SendUnitData, command_id=0x0070)
+scapy_all.bind_layers(enip.ENIP_UDP, enip.ENIP_ListServices, command_id=0x0004)
+scapy_all.bind_layers(enip.ENIP_UDP, enip.ENIP_ListIdentity, command_id=0x0063)
 
 if __name__ == '__main__':
     # Test building/dissecting packets
@@ -89,9 +67,10 @@ if __name__ == '__main__':
     pkt = scapy_all.Ether(src='00:1d:9c:c8:13:37', dst='01:00:5e:40:12:34')
     pkt /= scapy_all.IP(src='192.168.1.42', dst='239.192.18.52')
     pkt /= scapy_all.UDP(sport=2222, dport=2222)
-    pkt /= ENIP_UDP(items=[
-        ENIP_UDP_Item() / ENIP_UDP_SequencedAddress(connection_id=1337, sequence=42),
-        ENIP_UDP_Item(type_id=0x00b1) / scapy_all.Raw(load=ENIP_UDP_KEEPALIVE),
+    # Updated this section to reflect code modifications and moving of classes - MED
+    pkt /= enip.ENIP_UDP(items = [
+        enip_cpf.CPF_AddressDataItem() / enip_cpf.CPF_SequencedAddressItem(connection_id=1337, sequence_number=42),
+        enip_cpf.CPF_DataItem(type_id=0x00b1) / scapy_all.Raw(load=ENIP_UDP_KEEPALIVE),
     ])
 
     # Build!
@@ -99,13 +78,13 @@ if __name__ == '__main__':
     pkt = scapy_all.Ether(data)
     pkt.show()
 
-    # Test the value of some fields
-    assert pkt[ENIP_UDP].count == 2
-    assert pkt[ENIP_UDP].items[0].type_id == 0x8002
-    assert pkt[ENIP_UDP].items[0].length == 8
-    assert pkt[ENIP_UDP].items[0].payload == pkt[ENIP_UDP_SequencedAddress]
-    assert pkt[ENIP_UDP_SequencedAddress].connection_id == 1337
-    assert pkt[ENIP_UDP_SequencedAddress].sequence == 42
-    assert pkt[ENIP_UDP].items[1].type_id == 0x00b1
-    assert pkt[ENIP_UDP].items[1].length == 38
-    assert pkt[ENIP_UDP].items[1].payload.load == ENIP_UDP_KEEPALIVE
+    # Test the value of some fields; new test setup due to moving classes - MED
+    assert pkt[enip.ENIP_UDP].count == 2
+    assert pkt[enip.ENIP_UDP].items[0].type_id == 0x8002
+    assert pkt[enip.ENIP_UDP].items[0].length == 8
+    assert pkt[enip_cpf.CPF_SequencedAddressItem].connection_id == 1337
+    assert pkt[enip_cpf.CPF_SequencedAddressItem].sequence_number == 42
+    assert pkt[enip.ENIP_UDP].items[0].payload == pkt[enip_cpf.CPF_SequencedAddressItem]
+    assert pkt[enip.ENIP_UDP].items[1].type_id == 0x00b1
+    assert pkt[enip.ENIP_UDP].items[1].length == 38
+    assert pkt[enip.ENIP_UDP].items[1].payload.load == ENIP_UDP_KEEPALIVE
