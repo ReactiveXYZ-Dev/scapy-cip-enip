@@ -27,8 +27,15 @@ from scapy import all as scapy_all
 import enip
 import enip_cpf
 
+# Moved all ENIP classes to file enip.py --> Keeps all EtherNet/IP Level
+# processing in the same file rather than splitting based on upper layer - MED
+
 scapy_all.bind_layers(scapy_all.TCP, enip.ENIP_PACKET, dport=44818)
 scapy_all.bind_layers(scapy_all.TCP, enip.ENIP_PACKET, sport=44818)
+scapy_all.bind_layers(enip_cpf.CPF_AddressDataItem, enip.ENIP_ConnectionAddress, type_id=0xA1)
+scapy_all.bind_layers(enip_cpf.CPF_DataItem, enip.ENIP_ConnectionPacket, type_id=0xB1)
+scapy_all.bind_layers(enip_cpf.CPF_Item, enip.ENIP_ConnectionAddress, type_id=0x00A1)
+scapy_all.bind_layers(enip_cpf.CPF_Item, enip.ENIP_ConnectionPacket, type_id=0x00B1)
 
 
 if __name__ == '__main__':
@@ -37,26 +44,30 @@ if __name__ == '__main__':
     pkt = scapy_all.Ether(src='01:23:45:67:89:ab', dst='ba:98:76:54:32:10')
     pkt /= scapy_all.IP(src='192.168.1.1', dst='192.168.1.42')
     pkt /= scapy_all.TCP(sport=10000, dport=44818)
+    # Modified to reflect changes in code names and locations - MED
     pkt /= ENIP_PACKET()
-    pkt /= ENIP_SendUnitData()
+    pkt /= enip.ENIP_SendUnitData(Encapsulated_CPF_packet = enip_cpf.ENIP_CPF(items=[
+        enip_cpf.CPF_AddressDataItem() / enip.ENIP_ConnectionAddress(connection_id=1337),
+        enip_cpf.CPF_DataItem() / enip.ENIP_ConnectionPacket(sequence=4242) / scapy_all.Raw(load='test'),
+    ]))
 
     # Build!
     data = str(pkt)
     pkt = scapy_all.Ether(data)
     pkt.show()
 
-    # Test the value of some fields
+    # Test the value of some fields; new test setup due to moving classes - MED
     assert pkt[enip.ENIP_PACKET].session == 0
     assert pkt[enip.ENIP_PACKET].status == 0
     assert pkt[enip.ENIP_PACKET].command_id == 0x70
-    assert pkt[enip.ENIP_PACKET].length == 16 #26
+    assert pkt[enip.ENIP_PACKET].length == 26
     assert pkt[enip_cpf.ENIP_CPF].count == 2
-    # assert pkt[enip.ENIP_SendUnitData].items[0].type_id == 0x00a1
-    # assert pkt[enip.ENIP_SendUnitData].items[0].length == 4
-    # assert pkt[enip.ENIP_SendUnitData].items[0].payload == pkt[enip.ENIP_ConnectionAddress]
-    # assert pkt[enip.ENIP_ConnectionAddress].connection_id == 1337
-    # assert pkt[enip.ENIP_SendUnitData].items[1].type_id == 0x00b1
-    # assert pkt[enip.ENIP_SendUnitData].items[1].length == 6
-    # assert pkt[enip.ENIP_SendUnitData].items[1].payload == pkt[enip.ENIP_ConnectionPacket]
-    # assert pkt[enip.ENIP_ConnectionPacket].sequence == 4242
-    # assert pkt[enip.ENIP_ConnectionPacket].payload.load == 'test'
+    assert pkt[enip_cpf.ENIP_CPF].items[0].type_id == 0x00a1
+    assert pkt[enip_cpf.ENIP_CPF].items[0].length == 4
+    assert pkt[enip_cpf.ENIP_CPF].items[0].payload == pkt[enip.ENIP_ConnectionAddress]
+    assert pkt[enip.ENIP_ConnectionAddress].connection_id == 1337
+    assert pkt[enip_cpf.ENIP_CPF].items[1].type_id == 0x00b1
+    assert pkt[enip_cpf.ENIP_CPF].items[1].length == 6
+    assert pkt[enip_cpf.ENIP_CPF].items[1].payload == pkt[enip.ENIP_ConnectionPacket]
+    assert pkt[enip.ENIP_ConnectionPacket].sequence == 4242
+    assert pkt[enip.ENIP_ConnectionPacket].payload.load == 'test'
