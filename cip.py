@@ -139,6 +139,11 @@ class CIP_ReqReadOtherTag(scapy_all.Packet):
         scapy_all.LEShortField("length", None),
     ]
 
+# Added classes to deal with CIP Logical and CIP Port segments, as well
+# as CIP path padding
+# New Classes:
+# CIP_PortSegment, CIP_LogicalSegment, CIP_PathPadded - MED
+
 class CIP_PortSegment(scapy_all.Packet):
     name="CIP_PortSegment"
 
@@ -287,6 +292,7 @@ class CIP_PathPadded(scapy_all.Packet):
         # return p[:self.length], p[self.length:]
         return (q,w,),(q,8-w,)
 
+# Additional bind_layers
 scapy_all.bind_layers(CIP_PathPadded, CIP_PortSegment, segment_type=0)   #Port Segment
 scapy_all.bind_layers(CIP_PathPadded, CIP_LogicalSegment, segment_type=1)   #Port Segment
 scapy_all.bind_layers(CIP_PathPadded, CIP_PortSegment, segment_type=2)   #Port Segment
@@ -305,7 +311,7 @@ class CIP_PathField(scapy_all.StrLenField):
         4: "attribute",  # 0x30 = 8-bit attribute ID, 0x31 = 16-bit attribute ID
     }
     KNOWN_CLASSES = {
-        0x01: "Idendity",
+        0x01: "Identity",
         0x02: "Message Router",
         0x06: "Connection Manager",
         0x6b: "Symbol",
@@ -523,7 +529,7 @@ class CIP(scapy_all.Packet):
         0x4f: "Read_Other_Tag_Service",  # ???
         0x52: "Read_Tag_Fragmented_Service",
         0x53: "Write_Tag_Fragmented_Service",
-        0x54: "Forward_Open?",
+        0x54: "Forward_Open",
     }
 
     fields_desc = [
@@ -605,8 +611,10 @@ class CIP_ConnectionParam(scapy_all.Packet):
 
     def do_build(self):
         # p = ''
+        # Corrected issue of malformed packet construction when attempting to
+        # communicate with PLC - MED
         p = super(CIP_ConnectionParam, self).do_build()
-        return p
+        return p[::-1] # we have to flip the output
 
     def extract_padding(self, s):
         return '', s
@@ -618,7 +626,7 @@ class CIP_ReqForwardOpen(scapy_all.Packet):
     
     SEGMENT_TYPE = {
         0x00: "Port Segment",
-        0x01: "Logical Segmentc",
+        0x01: "Logical Segment",
         0x02: "Network Segment",
         0x03: "Symbolic Segment",
         0x04: "Data Segment",
@@ -628,6 +636,8 @@ class CIP_ReqForwardOpen(scapy_all.Packet):
     }
 
     fields_desc = [
+        # Updated a few field descriptions to adjust how they are displayed
+        # Altered fields begin with utils. rather than scapy_all. - MED
         scapy_all.BitField("priority", 0, 4),
         scapy_all.BitField("tick_time", 0, 4),
         scapy_all.ByteField("timeout_ticks", 249),
@@ -643,8 +653,10 @@ class CIP_ReqForwardOpen(scapy_all.Packet):
         utils.XLEIntField("TO_rpi", 0x007a1200),
         scapy_all.PacketField('TO_connection_param', CIP_ConnectionParam(), CIP_ConnectionParam),
         scapy_all.XByteField("transport_type", 0xa3),  # direction server, application object, class 3
+        # Changed  name - MED
         scapy_all.ByteField("Connection_Path_Size", None),  #The number of 16 bit words in the Connection_Path field.
         # scapy_all.PacketListField("path_segment_items", [], CIP_Path1, length_from=lambda p: 2 * p.Connection_Path_Size),
+        # Modified Implementation - MED
         scapy_all.PacketListField("path_segment_items", [], CIP_PathPadded, length_from=lambda p: 6),
         # CIP_PathField("path", None, length_from=lambda p: 2 * p.path_wordsize),
     ]
@@ -728,7 +740,7 @@ class CIP_ReqConnectionManager(scapy_all.Packet):
             p = p[:-4] + b"\0" + p[-4:]
         return p + pay
 
-
+# Updated to fit with new code organization
 # scapy_all.bind_layers(enip.ENIP_ConnectionPacket, CIP)
 scapy_all.bind_layers(enip_cpf.CPF_DataItem, CIP, type_id=0x00b2)
 
