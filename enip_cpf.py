@@ -107,3 +107,4 @@ class ENIP_CPF(scapy_all.Packet):
 scapy_all.bind_layers(CPF_AddressDataItem, CPF_SequencedAddressItem, type_id=0x8002)
 scapy_all.bind_layers(CPF_Item, CPF_SequencedAddressItem, type_id=0x8002)
 scapy_all.bind_layers(ENIP_CPF, CPF_DataItem, type_id=0x8002)
+scapy_all.bind_layers(CPF_DataItem, CPF_SequencedAddressItem, type_id=0x00B2)
