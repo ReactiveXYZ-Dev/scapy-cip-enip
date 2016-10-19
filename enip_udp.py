@@ -50,10 +50,14 @@ ENIP_UDP_KEEPALIVE = (
 # ENIP_UDP moved to new file enip.py --> Keeps all EtherNet/IP Level
 # processing in the same file rather than splitting based on upper layer - MED
 
+scapy_all.bind_layers(scapy_all.UDP, enip.ENIP_PACKET, sport=2222, dport=2222)
+scapy_all.bind_layers(scapy_all.UDP, enip.ENIP_PACKET, dport=44818)
+scapy_all.bind_layers(scapy_all.UDP, enip.ENIP_PACKET, sport=44818)
 
-scapy_all.bind_layers(scapy_all.UDP, ENIP_UDP, sport=2222, dport=2222)
-scapy_all.bind_layers(ENIP_UDP_Item, ENIP_UDP_SequencedAddress, type_id=0x8002)
-scapy_all.bind_layers(scapy_all.UDP, enip.ENIP_UDP, sport=44818)
+# Added additional binding options for ENIP_UDP - MED; needed for scy-phy test case
+# scapy_all.bind_layers(scapy_all.UDP, ENIP_UDP, sport=2222, dport=2222)
+# scapy_all.bind_layers(ENIP_UDP_Item, ENIP_UDP_SequencedAddress, type_id=0x8002)
+# scapy_all.bind_layers(scapy_all.UDP, enip.ENIP_UDP, sport=44818)
 
 scapy_all.bind_layers(enip.ENIP_UDP, enip.ENIP_RegisterSession, command_id=0x0065)
 scapy_all.bind_layers(enip.ENIP_UDP, enip.ENIP_SendRRData, command_id=0x006f)
