@@ -67,7 +67,7 @@ class CIP_RespAttributesList(scapy_all.Packet):
     def split_guess(self, attr_list, verbose=False):
         """Split the content of the Get_Attribute_List response with the known attribute list
 
-        Return a list of (attr, value) tuples, or None if an error occured
+        Return a list of (attr, value) tuples, or None if an error occurred
         """
         content = self.content
         offset = 0
@@ -294,7 +294,7 @@ class CIP_PathPadded(scapy_all.Packet):
 
 # Additional bind_layers
 scapy_all.bind_layers(CIP_PathPadded, CIP_PortSegment, segment_type=0)   #Port Segment
-scapy_all.bind_layers(CIP_PathPadded, CIP_LogicalSegment, segment_type=1)   #Port Segment
+scapy_all.bind_layers(CIP_PathPadded, CIP_LogicalSegment, segment_type=1)   #Logical Segment
 scapy_all.bind_layers(CIP_PathPadded, CIP_PortSegment, segment_type=2)   #Port Segment
 scapy_all.bind_layers(CIP_PathPadded, CIP_PortSegment, segment_type=3)   #Port Segment
 scapy_all.bind_layers(CIP_PathPadded, CIP_PortSegment, segment_type=4)   #Port Segment
@@ -742,7 +742,8 @@ class CIP_ReqConnectionManager(scapy_all.Packet):
 
 # Updated to fit with new code organization
 # scapy_all.bind_layers(enip.ENIP_ConnectionPacket, CIP)
-scapy_all.bind_layers(enip_cpf.CPF_DataItem, CIP, type_id=0x00b2)
+scapy_all.bind_layers(enip_cpf.CPF_DataItem, CIP, type_id=0x00b2) #0x00B2 : "Unconnected Data Item"
+scapy_all.bind_layers(enip_cpf.CPF_Item, CIP, type_id=0x00b2) #0x00B2 : "Unconnected Data Item"
 
 scapy_all.bind_layers(CIP, CIP_RespAttributesAll, direction=1, service=0x01)
 scapy_all.bind_layers(CIP, CIP_ReqGetAttributeList, direction=0, service=0x03)
