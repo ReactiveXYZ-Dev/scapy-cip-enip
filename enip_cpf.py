@@ -93,6 +93,12 @@ class ENIP_CPF(scapy_all.Packet):
         # Changed implementation to reflect use of CIP_Item above
         scapy_all.PacketListField("items", [], CPF_Item,
                                   count_from=lambda p: p.count),
+
+        # scapy_all.PacketField("Address_Item", CPF_AddressDataItem('', type_id=0x0, length=0), CPF_AddressDataItem),
+        # scapy_all.PacketField("Data_Item", CPF_DataItem('', type_id=0x0, length=0), CPF_DataItem),
+        # scapy_all.PacketField("Address_Item", CPF_AddressDataItem('', type_id=0xA1, length=None), CPF_AddressDataItem),
+        # scapy_all.PacketField("Data_Item", CPF_DataItem('', type_id=0xB1, length=None), CPF_DataItem),
+
         # Due to potential 'optional' packet components at end in protocol
         scapy_all.ConditionalField(
             scapy_all.PacketListField("optional_items", None, CPF_Item, count_from=lambda p: p.count-2),

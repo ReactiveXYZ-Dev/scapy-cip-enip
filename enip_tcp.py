@@ -50,9 +50,16 @@ if __name__ == '__main__':
         enip_cpf.CPF_AddressDataItem() / enip.ENIP_ConnectionAddress(connection_id=1337),
         enip_cpf.CPF_DataItem() / enip.ENIP_ConnectionPacket(sequence=4242) / scapy_all.Raw(load='test'),
     ]))
+    # pkt /= enip_cpf.ENIP_CPF('', Address_Item = enip_cpf.CPF_AddressDataItem() / enip.ENIP_ConnectionAddress(connection_id=1337),
+    #     Data_Item = enip_cpf.CPF_DataItem() / enip.ENIP_ConnectionPacket(sequence=4242) / scapy_all.Raw(load='test'))
+    # pkt /= enip_cpf.ENIP_CPF(items=[
+    #     enip_cpf.CPF_AddressDataItem() / enip.ENIP_ConnectionAddress(connection_id=1337),
+    #     enip_cpf.CPF_DataItem() / enip.ENIP_ConnectionPacket(sequence=4242) / scapy_all.Raw(load='test'),
+    # ])
 
     # Build!
     data = str(pkt)
+    print ' '.join("{:02x}".format(ord(c)) for c in data)
     pkt = scapy_all.Ether(data)
     pkt.show()
 
@@ -71,3 +78,13 @@ if __name__ == '__main__':
     assert pkt[enip_cpf.ENIP_CPF].items[1].payload == pkt[enip.ENIP_ConnectionPacket]
     assert pkt[enip.ENIP_ConnectionPacket].sequence == 4242
     assert pkt[enip.ENIP_ConnectionPacket].payload.load == 'test'
+
+    # assert pkt[enip.ENIP_SendUnitData].items[0].type_id == 0x00a1
+    # assert pkt[enip.ENIP_SendUnitData].items[0].length == 4
+    # assert pkt[enip.ENIP_SendUnitData].items[0].payload == pkt[enip.ENIP_ConnectionAddress]
+    # assert pkt[enip.ENIP_ConnectionAddress].connection_id == 1337
+    # assert pkt[enip.ENIP_SendUnitData].items[1].type_id == 0x00b1
+    # assert pkt[enip.ENIP_SendUnitData].items[1].length == 6
+    # assert pkt[enip.ENIP_SendUnitData].items[1].payload == pkt[enip.ENIP_ConnectionPacket]
+    # assert pkt[enip.ENIP_ConnectionPacket].sequence == 4242
+    # assert pkt[enip.ENIP_ConnectionPacket].payload.load == 'test'

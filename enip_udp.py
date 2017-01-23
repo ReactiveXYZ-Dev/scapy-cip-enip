@@ -27,7 +27,7 @@ in SUTD's secure water treatment testbed.
 import struct
 
 from scapy import all as scapy_all
-
+# from enip_tcp import *
 import enip
 import enip_cpf
 
@@ -55,8 +55,8 @@ scapy_all.bind_layers(scapy_all.UDP, enip.ENIP_PACKET, dport=44818)
 scapy_all.bind_layers(scapy_all.UDP, enip.ENIP_PACKET, sport=44818)
 
 # Added additional binding options for ENIP_UDP - MED; needed for scy-phy test case
-# scapy_all.bind_layers(scapy_all.UDP, ENIP_UDP, sport=2222, dport=2222)
-# scapy_all.bind_layers(ENIP_UDP_Item, ENIP_UDP_SequencedAddress, type_id=0x8002)
+# scapy_all.bind_layers(scapy_all.UDP, enip.ENIP_UDP, sport=2222, dport=2222)
+# scapy_all.bind_layers(scapy_all.UDP, enip.ENIP_UDP, dport=44818)
 # scapy_all.bind_layers(scapy_all.UDP, enip.ENIP_UDP, sport=44818)
 
 scapy_all.bind_layers(enip.ENIP_UDP, enip.ENIP_RegisterSession, command_id=0x0065)
@@ -65,12 +65,19 @@ scapy_all.bind_layers(enip.ENIP_UDP, enip.ENIP_SendUnitData, command_id=0x0070)
 scapy_all.bind_layers(enip.ENIP_UDP, enip.ENIP_ListServices, command_id=0x0004)
 scapy_all.bind_layers(enip.ENIP_UDP, enip.ENIP_ListIdentity, command_id=0x0063)
 
+
+# scapy_all.bind_layers(enip.ENIP_PACKET, ENIP_SequencedAddress, type_id=0x8002)
+
 if __name__ == '__main__':
     # Test building/dissecting packets
     # Build a keep-alive packet
     pkt = scapy_all.Ether(src='00:1d:9c:c8:13:37', dst='01:00:5e:40:12:34')
     pkt /= scapy_all.IP(src='192.168.1.42', dst='239.192.18.52')
     pkt /= scapy_all.UDP(sport=2222, dport=2222)
+    # pkt /= enip.ENIP_PACKET(items=[
+    #     enip.ENIP_SendUnitData_Item() / enip.ENIP_SequencedAddress(connection_id=1337, sequence=42),
+    #     enip.ENIP_SendUnitData_Item(type_id=0x00b1) / scapy_all.Raw(load=ENIP_UDP_KEEPALIVE),
+    # ])
     # Updated this section to reflect code modifications and moving of classes - MED
     pkt /= enip.ENIP_UDP(items = [
         enip_cpf.CPF_AddressDataItem() / enip_cpf.CPF_SequencedAddressItem(connection_id=1337, sequence_number=42),
@@ -79,6 +86,7 @@ if __name__ == '__main__':
 
     # Build!
     data = str(pkt)
+    print ' '.join("{:02x}".format(ord(c)) for c in data)
     pkt = scapy_all.Ether(data)
     pkt.show()
 

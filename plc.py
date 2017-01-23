@@ -23,16 +23,18 @@
 import logging
 import socket
 import struct
+import enip_cpf
 
 from scapy import all as scapy_all
 
 from cip import CIP, CIP_Path, CIP_ReqConnectionManager, \
     CIP_MultipleServicePacket, CIP_ReqForwardOpen, CIP_RespForwardOpen, \
     CIP_ReqForwardClose, CIP_ReqGetAttributeList, CIP_ReqReadOtherTag
+# from enip_tcp import ENIP_TCP, ENIP_SendUnitData, ENIP_SendUnitData_Item, \
+#     ENIP_ConnectionAddress, ENIP_ConnectionPacket, ENIP_RegisterSession, ENIP_SendRRData
 # Updated imports to reflect code changes in other files - MED
 from enip import ENIP_PACKET, ENIP_SendUnitData, ENIP_ConnectionAddress, \
     ENIP_ConnectionPacket, ENIP_RegisterSession, ENIP_SendRRData
-import enip_cpf
 
 # Global switch to make it easy to test without sending anything
 NO_NETWORK = False
@@ -58,6 +60,7 @@ class PLCClient(object):
         self.sequence = 1
 
         # Open an Ethernet/IP session
+        # sessionpkt = ENIP_TCP() / ENIP_RegisterSession()
         # Updated to reflect location and name of classes - MED
         sessionpkt = ENIP_PACKET() / ENIP_RegisterSession()
         if self.sock is not None:
@@ -71,14 +74,24 @@ class PLCClient(object):
 
     def send_rr_cip(self, cippkt):
         """Send a CIP packet over the TCP connection as an ENIP Req/Rep Data"""
+        # enippkt = ENIP_TCP(session=self.session_id)
         # Updated to reflect location and name of classes - MED
         enippkt = ENIP_PACKET(session=self.session_id)
         enippkt /= ENIP_SendRRData(items=[
             #Updated to reflect code changes - MED
             enip_cpf.CPF_AddressDataItem(type_id=0),
             enip_cpf.CPF_DataItem() / cippkt
+
+            # ENIP_SendUnitData_Item(type_id=0),
+            # ENIP_SendUnitData_Item() / cippkt
         ])
         if self.sock is not None:
+            ##
+            # print(str(enippkt))
+            # print(scapy_all.hexdump(enippkt))
+            # enippkt.scapy_all.show()
+
+            ##
             self.sock.send(str(enippkt))
 
     def send_rr_cm_cip(self, cippkt):
@@ -97,12 +110,16 @@ class PLCClient(object):
 
     def send_unit_cip(self, cippkt):
         """Send a CIP packet over the TCP connection as an ENIP Unit Data"""
+        # enippkt = ENIP_TCP(session=self.session_id)
         # Updated to reflect location and name of classes - MED
         enippkt = ENIP_PACKET(session=self.session_id)
         enippkt /= ENIP_SendUnitData(items=[
             # Updated to reflect code changes - MED
             enip_cpf.CPF_AddressDataItem() / ENIP_ConnectionAddress(connection_id=self.enip_connid),
             enip_cpf.CPF_DataItem() / ENIP_ConnectionPacket(sequence=self.sequence) / cippkt
+
+            # ENIP_SendUnitData_Item() / ENIP_ConnectionAddress(connection_id=self.enip_connid),
+            # ENIP_SendUnitData_Item() / ENIP_ConnectionPacket(sequence=self.sequence) / cippkt
         ])
         self.sequence += 1
         if self.sock is not None:
@@ -113,6 +130,7 @@ class PLCClient(object):
         if self.sock is None:
             return
         pktbytes = self.sock.recv(2000)
+        # pkt = ENIP_TCP(pktbytes)
         # Updated to reflect location and name of classes - MED
         pkt = ENIP_PACKET(pktbytes)
         return pkt
@@ -121,6 +139,12 @@ class PLCClient(object):
         """Send a forward open request"""
         cippkt = CIP(service=0x54, path=CIP_Path(wordsize=2, path=b'\x20\x06\x24\x01'))
         cippkt /= CIP_ReqForwardOpen(path_wordsize=3, path=b"\x01\x00\x20\x02\x24\x01")
+        ##
+        # print("CIP packet before creating ENIP")
+        # print(str(cippkt))
+        # print(scapy_all.hexdump(cippkt))
+
+        ##
         self.send_rr_cip(cippkt)
         resppkt = self.recv_enippkt()
         if self.sock is None:
