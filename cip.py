@@ -172,6 +172,23 @@ class CIP_PortSegment(scapy_all.Packet):
     #     print self.__class__.__name__ + ": P=" + str(p)
     #     return "", p
 
+class CIP_DataSegmentPadded(scapy_all.Packet):
+    name='CIP_DataSegmentPadded'
+
+    SEG_TYPE={
+        0: "Simple Data Segment",
+        17: "ANSI Extended Symbol Segment"
+    }
+
+    fields_desc = [
+        scapy_all.BitEnumField("segment_subtype", 0, 5, SEG_TYPE),
+        scapy_all.ConditionalField(scapy_all.ByteField("word_size", 0), lambda p: p.segment_subtype == 0),
+        scapy_all.ConditionalField(scapy_all.ByteField("character_count", 0), lambda p: p.segment_subtype == 17),
+        scapy_all.ConditionalField(scapy_all.FieldListField("data",0,scapy_all.LEShortField('',0),count_from = lambda p: p.word_size), lambda p: p.segment_subtype == 0),
+        scapy_all.ConditionalField(scapy_all.FieldListField("data", 0, scapy_all.ByteField('', 0), count_from=lambda p: p.character_count),
+            lambda p: p.segment_subtype == 17)
+    ]
+
 class CIP_Logical_SpecialSegment(scapy_all.Packet):
     name="Electronic_Key_Segment"
 
@@ -186,7 +203,7 @@ class CIP_Logical_SpecialSegment(scapy_all.Packet):
     ]
 
     def extract_padding(self, p):
-        print self.__class__.__name__ + ": P=" + str(p)
+        # print self.__class__.__name__ + ": P=" + str(p)
         return None, p
 
 class CIP_LogicalSegmentPadded(scapy_all.Packet):
@@ -210,7 +227,7 @@ class CIP_LogicalSegmentPadded(scapy_all.Packet):
         2: "32-bit logical address",
         3: "Reserved for future use"
     }
-
+    magic_value=5
     fields_desc = [
         scapy_all.BitEnumField("logical_type", 0, 3, LOGICAL_TYPE),
         scapy_all.ConditionalField(scapy_all.BitEnumField("logical_format", 0, 2, LOGICAL_FORMAT), lambda p: p.logical_type < 5),
@@ -237,9 +254,13 @@ class CIP_LogicalSegmentPadded(scapy_all.Packet):
         ),
     ]
 
-    # def extract_padding(self, p):
-    #     print self.__class__.__name__ + ": P=" + str(p)
-    #     return  '',p
+    def extract_padding(self, p):
+        # print self.__class__.__name__ + ": P=" + str(p)
+        # magic_value = 5: logic_value < 5 have no payload --> go to previous layer again; logic_value >=5 have payload --> process
+        if self.logical_type < 5:
+            return  '',p
+        else:
+            return p, ''
 
 scapy_all.bind_layers(CIP_LogicalSegmentPadded, CIP_Logical_SpecialSegment, logical_type=5)  # Logical Key Segment
 
@@ -319,7 +340,7 @@ scapy_all.bind_layers(CIP_PathPadded, CIP_PortSegment, segment_type=0)   #Port S
 scapy_all.bind_layers(CIP_PathPadded, CIP_LogicalSegmentPadded, segment_type=1)   #Logical Segment
 scapy_all.bind_layers(CIP_PathPadded, CIP_PortSegment, segment_type=2)   #Port Segment
 scapy_all.bind_layers(CIP_PathPadded, CIP_PortSegment, segment_type=3)   #Port Segment
-scapy_all.bind_layers(CIP_PathPadded, CIP_PortSegment, segment_type=4)   #Port Segment
+scapy_all.bind_layers(CIP_PathPadded, CIP_DataSegmentPadded, segment_type=4)   #Data Segment
 scapy_all.bind_layers(CIP_PathPadded, CIP_PortSegment, segment_type=5)   #Port Segment
 scapy_all.bind_layers(CIP_PathPadded, CIP_PortSegment, segment_type=6)   #Port Segment
 scapy_all.bind_layers(CIP_PathPadded, CIP_PortSegment, segment_type=7)   #Port Segment
@@ -401,7 +422,7 @@ class CIP_Path(scapy_all.Packet):
     ]
 
     def extract_padding(self, p):
-        print self.__class__.__name__ + ": P=" + str(p)
+        # print self.__class__.__name__ + ": P=" + str(p)
         return "", p
 
     @classmethod
@@ -689,10 +710,10 @@ class CIP_ReqForwardOpen(scapy_all.Packet):
         #CIP_PathField("path", None, length_from=lambda p: 2 * p.Connection_Path_Size),
     ]
 
-    # MED 1/23/17
-    # def extract_padding(self, p):
-    #     print self.__class__.__name__ + ": P=" + str(p)
-    #     return  '', p
+
+    def extract_padding(self, p):
+        # print self.__class__.__name__ + ": P=" + str(p)
+        return  '', p
 
 
 class CIP_RespForwardOpen(scapy_all.Packet):
