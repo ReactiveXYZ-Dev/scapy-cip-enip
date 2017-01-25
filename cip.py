@@ -168,9 +168,9 @@ class CIP_PortSegment(scapy_all.Packet):
         )
     ]
 
-    # def extract_padding(self, p):
-    #     print self.__class__.__name__ + ": P=" + str(p)
-    #     return "", p
+    def extract_padding(self, p):
+        #print self.__class__.__name__ + ": P=" + str(p)
+        return "", p
 
 class CIP_DataSegmentPadded(scapy_all.Packet):
     name='CIP_DataSegmentPadded'
@@ -529,7 +529,7 @@ class CIP_ResponseStatus(scapy_all.Packet):
     }
 
     def extract_padding(self, p):
-        print self.__class__.__name__ + ": P=" + str(p)
+        # print self.__class__.__name__ + ": P=" + str(p)
         return "", p
 
     def __repr__(self):
@@ -570,7 +570,7 @@ class CIP(scapy_all.Packet):
         0x4b: "Execute_PCCC_Service",  # PCCC = Programmable Controller Communication Commands
         0x4c: "Read_Tag_Service",
         0x4d: "Write_Tag_Service",
-        0x4e: "Read_Modify_Write_Tag_Service",
+        0x4e: "Forward_Close", # Forward Close/ "Read_Modify_Write_Tag_Service"
         0x4f: "Read_Other_Tag_Service",  # ???
         0x52: "Read_Tag_Fragmented_Service",
         0x53: "Write_Tag_Fragmented_Service",
@@ -662,7 +662,7 @@ class CIP_ConnectionParam(scapy_all.Packet):
         return p[::-1] # we have to flip the output
 
     def extract_padding(self, p):
-        print self.__class__.__name__ + ": P=" + str(p)
+        # print self.__class__.__name__ + ": P=" + str(p)
         return '', p
 
 
@@ -743,9 +743,21 @@ class CIP_ReqForwardClose(scapy_all.Packet):
         scapy_all.LEIntField("originator_serial_number", 0xdeadbeef),
         scapy_all.ByteField("path_wordsize", None),
         scapy_all.XByteField("reserved", 0),
-        CIP_PathField("path", None, length_from=lambda p: 2 * p.path_wordsize),
+        # CIP_PathField("path", None, length_from=lambda p: 2 * p.path_wordsize), # Original Implementation by Scy-Phy
+        scapy_all.PacketListField("path_segment_items", [], CIP_PathPadded, length_from=lambda p: 2 * p.path_wordsize)
     ]
 
+class CIP_RespForwardClose(scapy_all.Packet):
+    """Forward Close Response"""
+    name = "CIP_RespForwardClose"
+    fields_desc = [
+        scapy_all.LEShortField('connection_serial_number',0x1337),
+        scapy_all.LEShortField('vendor_id', 0x004d),
+        scapy_all.LEIntField('originator_serial_number', 0xdeadbeef),
+        scapy_all.ByteField('application_reply_size', 0),
+        scapy_all.ByteField('reserved', 0),
+        scapy_all.FieldListField('application_reply', 0, scapy_all.ShortField,count_from=lambda p: p.application_reply_size)
+    ]
 
 class CIP_MultipleServicePacket(scapy_all.Packet):
     """Multiple_Service_Packet request or response"""
@@ -805,6 +817,8 @@ scapy_all.bind_layers(CIP, CIP_RespAttributesList, direction=1, service=0x03)
 scapy_all.bind_layers(CIP, CIP_MultipleServicePacket, service=0x0a)
 scapy_all.bind_layers(CIP, CIP_RespSingleAttribute, direction=1, service=0x0e)
 scapy_all.bind_layers(CIP, CIP_ReqReadOtherTag, direction=0, service=0x4c)
+scapy_all.bind_layers(CIP, CIP_ReqForwardClose, direction=0, service=0x4e)
+scapy_all.bind_layers(CIP, CIP_RespForwardClose, direction=1, service=0x4e)
 scapy_all.bind_layers(CIP, CIP_ReqReadOtherTag, direction=0, service=0x4f)
 scapy_all.bind_layers(CIP, CIP_ReqForwardOpen, direction=0, service=0x54)
 scapy_all.bind_layers(CIP, CIP_RespForwardOpen, direction=1, service=0x54)
