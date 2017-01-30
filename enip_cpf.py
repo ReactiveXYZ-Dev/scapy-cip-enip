@@ -69,6 +69,13 @@ class CPF_Item(scapy_all.Packet):
     fields_desc = [
         scapy_all.LEShortEnumField('type_id', 0, ITEM_ID_NUMBERS),
         scapy_all.LEShortField("length", None),
+        scapy_all.ConditionalField(
+            scapy_all.FieldListField(
+                'data',0,scapy_all.XByteField('', 0),
+                count_from = lambda p: p.length
+            ),
+            lambda p: p.type_id==0xB1 # or p.type_id==0xB2
+        )
     ]
 
     def extract_padding(self, p):

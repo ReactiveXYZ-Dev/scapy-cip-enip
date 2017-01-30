@@ -50,13 +50,15 @@ ENIP_UDP_KEEPALIVE = (
 # ENIP_UDP moved to new file enip.py --> Keeps all EtherNet/IP Level
 # processing in the same file rather than splitting based on upper layer - MED
 
-scapy_all.bind_layers(scapy_all.UDP, enip.ENIP_PACKET, sport=2222, dport=2222)
+# Port 44818 - Utilizes command_id structure rather than CPF structure
+# scapy_all.bind_layers(scapy_all.UDP, enip.ENIP_PACKET, sport=2222, dport=2222)
 scapy_all.bind_layers(scapy_all.UDP, enip.ENIP_PACKET, dport=44818)
 scapy_all.bind_layers(scapy_all.UDP, enip.ENIP_PACKET, sport=44818)
 
 # Added additional binding options for ENIP_UDP - MED; needed for scy-phy test case
-# scapy_all.bind_layers(scapy_all.UDP, enip.ENIP_UDP, sport=2222, dport=2222)
-# scapy_all.bind_layers(scapy_all.UDP, enip.ENIP_UDP, dport=44818)
+# # Port 2222 - Utilizes CPF structure rather than command_id structure
+scapy_all.bind_layers(scapy_all.UDP, enip.ENIP_UDP, sport=2222, dport=2222)
+# scapy_all.bind_layerports(scapy_all.UDP, enip.ENIP_UDP, dport=44818)
 # scapy_all.bind_layers(scapy_all.UDP, enip.ENIP_UDP, sport=44818)
 
 scapy_all.bind_layers(enip.ENIP_UDP, enip.ENIP_RegisterSession, command_id=0x0065)

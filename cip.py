@@ -49,7 +49,6 @@ class CIP_RespAttributesAll(scapy_all.Packet):
         scapy_all.StrField("value", None),
     ]
 
-
 class CIP_RespAttributesList(scapy_all.Packet):
     """List of attributes in Get_Attribute_List responses
 
@@ -60,6 +59,9 @@ class CIP_RespAttributesList(scapy_all.Packet):
     """
     fields_desc = [
         scapy_all.LEShortField("count", 0),
+        # scapy_all.StrField("content", ""),
+        scapy_all.LEShortField('attribute', 0),
+        scapy_all.XShortField('status', {0: 'success'}),
         scapy_all.StrField("content", ""),
     ]
 
@@ -184,7 +186,7 @@ class CIP_DataSegmentPadded(scapy_all.Packet):
         scapy_all.BitEnumField("segment_subtype", 0, 5, SEG_TYPE),
         scapy_all.ConditionalField(scapy_all.ByteField("word_size", 0), lambda p: p.segment_subtype == 0),
         scapy_all.ConditionalField(scapy_all.ByteField("character_count", 0), lambda p: p.segment_subtype == 17),
-        scapy_all.ConditionalField(scapy_all.FieldListField("data",0,scapy_all.LEShortField('',0),count_from = lambda p: p.word_size), lambda p: p.segment_subtype == 0),
+        scapy_all.ConditionalField(scapy_all.FieldListField("data",0, scapy_all.LEShortField('',0), count_from = lambda p: p.word_size), lambda p: p.segment_subtype == 0),
         scapy_all.ConditionalField(scapy_all.FieldListField("data", 0, scapy_all.ByteField('', 0), count_from=lambda p: p.character_count),
             lambda p: p.segment_subtype == 17)
     ]
@@ -572,7 +574,7 @@ class CIP(scapy_all.Packet):
         0x4d: "Write_Tag_Service",
         0x4e: "Forward_Close", # Forward Close/ "Read_Modify_Write_Tag_Service"
         0x4f: "Read_Other_Tag_Service",  # ???
-        0x52: "Read_Tag_Fragmented_Service",
+        0x52: "Unconnected_Send", # Unconnected Send/Read_Tag_Fragmented_Service
         0x53: "Write_Tag_Fragmented_Service",
         0x54: "Forward_Open",
     }
@@ -756,7 +758,7 @@ class CIP_RespForwardClose(scapy_all.Packet):
         scapy_all.LEIntField('originator_serial_number', 0xdeadbeef),
         scapy_all.ByteField('application_reply_size', 0),
         scapy_all.ByteField('reserved', 0),
-        scapy_all.FieldListField('application_reply', 0, scapy_all.ShortField,count_from=lambda p: p.application_reply_size)
+        scapy_all.FieldListField('application_reply', 0, scapy_all.ShortField('',0), count_from=lambda p: p.application_reply_size)
     ]
 
 class CIP_MultipleServicePacket(scapy_all.Packet):
