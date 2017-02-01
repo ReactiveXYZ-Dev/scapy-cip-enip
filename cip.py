@@ -813,6 +813,11 @@ class CIP_ReqConnectionManager(scapy_all.Packet):
 scapy_all.bind_layers(enip_cpf.CPF_DataItem, CIP, type_id=0x00b2) #0x00B2 : "Unconnected Data Item"
 scapy_all.bind_layers(enip_cpf.CPF_Item, CIP, type_id=0x00b2) #0x00B2 : "Unconnected Data Item"
 
+scapy_all.bind_layers(enip.ENIP_SendUnitData_Item, CIP, type_id=0x00b2)
+scapy_all.bind_layers(enip.ENIP_SendUnitData_Item, CIP, type_id=0x00b1)
+
+scapy_all.bind_layers(enip.ENIP_ConnectionPacket, CIP)
+
 scapy_all.bind_layers(CIP, CIP_RespAttributesAll, direction=1, service=0x01)
 scapy_all.bind_layers(CIP, CIP_ReqGetAttributeList, direction=0, service=0x03)
 scapy_all.bind_layers(CIP, CIP_RespAttributesList, direction=1, service=0x03)

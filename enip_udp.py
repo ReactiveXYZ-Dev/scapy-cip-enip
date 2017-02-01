@@ -61,9 +61,10 @@ scapy_all.bind_layers(scapy_all.UDP, enip.ENIP_UDP, sport=2222, dport=2222)
 # scapy_all.bind_layerports(scapy_all.UDP, enip.ENIP_UDP, dport=44818)
 # scapy_all.bind_layers(scapy_all.UDP, enip.ENIP_UDP, sport=44818)
 
-scapy_all.bind_layers(enip.ENIP_UDP, enip.ENIP_RegisterSession, command_id=0x0065)
-scapy_all.bind_layers(enip.ENIP_UDP, enip.ENIP_SendRRData, command_id=0x006f)
-scapy_all.bind_layers(enip.ENIP_UDP, enip.ENIP_SendUnitData, command_id=0x0070)
+# RegisterSession, SendRRData, SendUnitData only sent via TCP
+# scapy_all.bind_layers(enip.ENIP_UDP, enip.ENIP_RegisterSession, command_id=0x0065)
+# scapy_all.bind_layers(enip.ENIP_UDP, enip.ENIP_SendRRData, command_id=0x006f)
+# scapy_all.bind_layers(enip.ENIP_UDP, enip.ENIP_SendUnitData, command_id=0x0070)
 scapy_all.bind_layers(enip.ENIP_UDP, enip.ENIP_ListServices, command_id=0x0004)
 scapy_all.bind_layers(enip.ENIP_UDP, enip.ENIP_ListIdentity, command_id=0x0063)
 

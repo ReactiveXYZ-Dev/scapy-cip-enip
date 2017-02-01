@@ -102,7 +102,7 @@ ENCAPSULATION_COMMANDS = utils.merge_dicts({
 
 class ENIP_ConnectionAddress(scapy_all.Packet):
     name = "ENIP_ConnectionAddress"
-    fields_desc = [scapy_all.LEIntField("connection_id", 0)]
+    fields_desc = [utils.XLEIntField("connection_id", 0)]
 
 
 class ENIP_ConnectionPacket(scapy_all.Packet):
@@ -110,16 +110,39 @@ class ENIP_ConnectionPacket(scapy_all.Packet):
     fields_desc = [scapy_all.LEShortField("sequence", 0)]
 
 
+class ENIP_SendUnitData_Item(scapy_all.Packet):
+    name = "ENIP_SendUnitData_Item"
+
+    fields_desc = [
+        scapy_all.LEShortEnumField("type_id", 0, {
+            0x0000: "null_address",  # NULL Address
+            0x00a1: "conn_address",  # Address for connection based requests
+            0x00b1: "conn_packet",  # Connected Transport packet
+            0x00b2: "unconn_message",  # Unconnected Messages (eg. used within CIP command SendRRData)
+            0x0100: "listservices_response",  # ListServices response
+        }),
+        scapy_all.LEShortField("length", None),
+    ]
+
+    def extract_padding(self, p):
+        return p[:self.length], p[self.length:]
+
+    def post_build(self, p, pay):
+        if self.length is None and pay:
+            l = len(pay)
+            p = p[:2] + struct.pack("<H", l) + p[4:]
+        return p + pay
+
 class ENIP_SendUnitData(scapy_all.Packet):
     """Data in ENIP header specific to the specified command"""
     name = "ENIP_SendUnitData"
     fields_desc = [
         scapy_all.LEIntField("interface_handle", 0),
         scapy_all.LEShortField("timeout", 0),
-        scapy_all.PacketField("Encapsulated_CPF_packet", enip_cpf.ENIP_CPF(), enip_cpf.ENIP_CPF ),
-        # utils.LEShortLenField("count", None, count_of="items"),
-        # scapy_all.PacketListField("items", [], ENIP_SendUnitData_Item,
-        #                           count_from=lambda p: p.count),
+        # scapy_all.PacketField("Encapsulated_CPF_packet", enip_cpf.ENIP_CPF(), enip_cpf.ENIP_CPF ),
+        utils.LEShortLenField("count", None, count_of="items"),
+        scapy_all.PacketListField("items", [], ENIP_SendUnitData_Item,
+                                  count_from=lambda p: p.count),
     ]
 
 
@@ -262,5 +285,5 @@ scapy_all.bind_layers(ENIP_PACKET, ENIP_RegisterSession, command_id=0x0065)
 scapy_all.bind_layers(ENIP_PACKET, ENIP_SendRRData, command_id=0x006f)
 scapy_all.bind_layers(ENIP_PACKET, ENIP_SendUnitData, command_id=0x0070)
 scapy_all.bind_layers(ENIP_PACKET, ENIP_ListIdentity, command_id=0x0063)
-# scapy_all.bind_layers(ENIP_SendUnitData_Item, ENIP_ConnectionAddress, type_id=0x00a1)
-# scapy_all.bind_layers(ENIP_SendUnitData_Item, ENIP_ConnectionPacket, type_id=0x00b1)
+scapy_all.bind_layers(ENIP_SendUnitData_Item, ENIP_ConnectionAddress, type_id=0x00a1)
+scapy_all.bind_layers(ENIP_SendUnitData_Item, ENIP_ConnectionPacket, type_id=0x00b1)
