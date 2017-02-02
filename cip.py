@@ -474,13 +474,6 @@ class CIP_Path(scapy_all.Packet):
 class CIP_ResponseStatus(scapy_all.Packet):
     """The response field of CIP headers"""
     name = "CIP_ResponseStatus"
-    fields_desc = [
-        scapy_all.XByteField("reserved", 0),  # Reserved byte, always null
-        scapy_all.ByteEnumField("status", 0, {0: "success"}),
-        scapy_all.XByteField("additional_size", 0),
-        scapy_all.StrLenField("additional", "",  # additional status
-                              length_from=lambda p: 2 * p.additional_size),
-    ]
 
     ERROR_CODES = {
         0x00: "Success",
@@ -529,6 +522,15 @@ class CIP_ResponseStatus(scapy_all.Packet):
         0x2b: "Unknown Modbus error",
         0x2c: "Attribute not gettable",
     }
+
+    fields_desc = [
+        scapy_all.XByteField("reserved", 0),  # Reserved byte, always null
+        scapy_all.ByteEnumField("status", 0, ERROR_CODES),
+        scapy_all.XByteField("additional_size", 0),
+        scapy_all.StrLenField("additional", "",  # additional status
+                              length_from=lambda p: 2 * p.additional_size),
+    ]
+
 
     def extract_padding(self, p):
         # print self.__class__.__name__ + ": P=" + str(p)
@@ -808,6 +810,13 @@ class CIP_ReqConnectionManager(scapy_all.Packet):
             p = p[:-4] + b"\0" + p[-4:]
         return p + pay
 
+class CIP_GenericClass(scapy_all.Packet):
+    name = "CIP_GenericClass"
+    fields_desc = [
+        scapy_all.StrField("data", None)
+    ]
+
+
 # Updated to fit with new code organization
 # scapy_all.bind_layers(enip.ENIP_ConnectionPacket, CIP)
 scapy_all.bind_layers(enip_cpf.CPF_DataItem, CIP, type_id=0x00b2) #0x00B2 : "Unconnected Data Item"
@@ -829,6 +838,12 @@ scapy_all.bind_layers(CIP, CIP_RespForwardClose, direction=1, service=0x4e)
 scapy_all.bind_layers(CIP, CIP_ReqReadOtherTag, direction=0, service=0x4f)
 scapy_all.bind_layers(CIP, CIP_ReqForwardOpen, direction=0, service=0x54)
 scapy_all.bind_layers(CIP, CIP_RespForwardOpen, direction=1, service=0x54)
+
+# Unknown services on network
+scapy_all.bind_layers(CIP, CIP_GenericClass, service=0x4b)
+scapy_all.bind_layers(CIP, CIP_GenericClass, service=0x4c)
+scapy_all.bind_layers(CIP, CIP_GenericClass, service=0x5c)
+
 
 # TODO: this is much imprecise :(
 # Need class in path to be 6 (Connection Manager)
