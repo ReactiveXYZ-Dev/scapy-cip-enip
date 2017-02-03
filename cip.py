@@ -61,7 +61,7 @@ class CIP_RespAttributesList(scapy_all.Packet):
         scapy_all.LEShortField("count", 0),
         # scapy_all.StrField("content", ""),
         scapy_all.LEShortField('attribute', 0),
-        scapy_all.XShortField('status', {0: 'success'}),
+        scapy_all.XShortField('status', 0),
         scapy_all.StrField("content", ""),
     ]
 
