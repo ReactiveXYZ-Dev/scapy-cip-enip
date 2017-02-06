@@ -728,7 +728,7 @@ class CIP_RespForwardOpen(scapy_all.Packet):
         scapy_all.LEIntField("TO_network_connection_id", None),
         scapy_all.LEShortField("connection_serial_number", None),
         scapy_all.LEShortField("vendor_id", None),
-        scapy_all.LEIntField("originator_serial_number", None),
+        utils.XLEIntField("originator_serial_number", None),
         scapy_all.LEIntField("OT_api", None),
         scapy_all.LEIntField("TO_api", None),
         scapy_all.ByteField("application_reply_size", None),
@@ -744,7 +744,7 @@ class CIP_ReqForwardClose(scapy_all.Packet):
         scapy_all.ByteField("timeout_ticks", 249),
         scapy_all.LEShortField("connection_serial_number", 0x1337),
         scapy_all.LEShortField("vendor_id", 0x004d),
-        scapy_all.LEIntField("originator_serial_number", 0xdeadbeef),
+        utils.XLEIntField("originator_serial_number", 0xdeadbeef),
         scapy_all.ByteField("path_wordsize", None),
         scapy_all.XByteField("reserved", 0),
         # CIP_PathField("path", None, length_from=lambda p: 2 * p.path_wordsize), # Original Implementation by Scy-Phy
@@ -757,7 +757,7 @@ class CIP_RespForwardClose(scapy_all.Packet):
     fields_desc = [
         scapy_all.LEShortField('connection_serial_number',0x1337),
         scapy_all.LEShortField('vendor_id', 0x004d),
-        scapy_all.LEIntField('originator_serial_number', 0xdeadbeef),
+        utils.XLEIntField('originator_serial_number', 0xdeadbeef),
         scapy_all.ByteField('application_reply_size', 0),
         scapy_all.ByteField('reserved', 0),
         scapy_all.FieldListField('application_reply', 0, scapy_all.ShortField('',0), count_from=lambda p: p.application_reply_size)
