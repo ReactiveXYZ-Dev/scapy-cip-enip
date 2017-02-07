@@ -841,7 +841,7 @@ scapy_all.bind_layers(CIP, CIP_RespForwardOpen, direction=1, service=0x54)
 
 # Unknown services on network
 scapy_all.bind_layers(CIP, CIP_GenericClass, service=0x4b)
-scapy_all.bind_layers(CIP, CIP_GenericClass, service=0x4c)
+scapy_all.bind_layers(CIP, CIP_GenericClass, direction=1, service=0x4c)
 scapy_all.bind_layers(CIP, CIP_GenericClass, service=0x5c)
 
 
